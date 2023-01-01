@@ -524,31 +524,69 @@ class Map:
             cnt +=1
         # print(cnt)?
 
+    def get_gird_map(self, x, y):
+        if x < self.h * 3 and x > 0:
+            if y < self.w * 5 and y > 0:
+                return self.grid_map[x][y]
+        return False
+
+    def check_valid(self, x, y):
+        """
+
+        :param x:
+        :param y:
+        :return: True means has no point
+        """
+        # self.show_grid_map()
+        u = not self.get_gird_map(x-2, y)
+        d = not self.get_gird_map(x+2, y)
+        l = not self.get_gird_map(x, y-3)
+        r = not self.get_gird_map(x, y+3)
+        return u, d, l, r
+
+    def push_card_valid(self, x, y, card):
+        """
+
+        :param x:
+        :param y:
+        :param card:
+        :return: valid to push return ok,else return false
+        """
+        if not isinstance(card, Path):
+            return True
+        lis1 = list(self.check_valid(x * 3 - 2, y * 5 - 3))
+        lis2 = [card.u, card.d, card.l, card.r]
+
+        flag = True
+        for a, b in zip(lis1, lis2):
+            if a:
+                if not b:
+                    flag = False
+        # print(card, lis1, lis2, flag)
+        return flag
 
     def push_card(self, x, y, card :Card):
-        if not self.grid[x-1][y-1].is_carded():
-            self.grid[x-1][y-1].push_card(card)
-            # tmp = copy.deepcopy(card)
-            # tmp[0] = ' '
-            # tmp[4] = ' '
-            # tmp[10] = ' '
-            # tmp[14] = ' '
-            tx = x * 3 - 2
-            ty = y * 5 - 3
-            cnt = 0
-            for xx in range(tx-1, tx+2):
-                for yy in range(ty-2, ty+3):
-                    # print(xx, yy, card[cnt])
-                    self.chessboard[xx][yy] = card[cnt]
-                    if cnt not in [0, 4, 10, 14]:
-                        if card[cnt] != ' ':
-                            self.grid_map[xx][yy] = 1
-                        else:
-                            self.grid_map[xx][yy] = 0
-                    cnt += 1
-            return True
+        if self.push_card_valid(x, y, card):
+            if not self.grid[x-1][y-1].is_carded():
+                self.grid[x-1][y-1].push_card(card)
+                tx = x * 3 - 2
+                ty = y * 5 - 3
+                cnt = 0
+                for xx in range(tx-1, tx+2):
+                    for yy in range(ty-2, ty+3):
+                        self.chessboard[xx][yy] = card[cnt]
+                        if cnt not in [0, 4, 10, 14]:
+                            if card[cnt] != ' ':
+                                self.grid_map[xx][yy] = 1
+                            else:
+                                self.grid_map[xx][yy] = 0
+                        cnt += 1
+                return True
+            else:
+                print('Sorry this position has been carded')
+                return False
         else:
-            print('Sorry this position has been carded')
+            print('Sorry, you could not to push this card')
             return False
 
     def show_grid_map(self):
@@ -667,7 +705,7 @@ class Game:
         self.distribute_card()
         self.init_map()
         self.show()
-        self.map.show_grid_map()
+        # self.map.show_grid_map()
         # self.gaming()
     def make_gold(self):
         golds = [Gold(1) for x in range(16)]
@@ -675,6 +713,8 @@ class Game:
         golds += [Gold(3) for x in range(4)]
         random.shuffle(golds)
         self.golds = deque(golds)
+
+
 
     def show_map_carded(self):
         self.map.show_grid()
@@ -801,7 +841,7 @@ class Game:
 
                 cls()
                 self.show()
-                self.map.show_grid_map()
+                # self.map.show_grid_map()
             if flag :
                 continue
             else :
@@ -968,18 +1008,20 @@ if __name__=='__main__':
     # print(path)
     # path.change_orientation()
     # print(path)
-    game.gold_count()
-    # path = Path('urdl')
-    # game.push_card(3,2, path)
-    # game.push_card(2,2, path)
-    # game.push_card(2,3, path)
-    # game.push_card(2,4, path)
-    # game.push_card(2,5, path)
-    # game.push_card(2,6, path)
-    # game.push_card(2,7, path)
-    # game.push_card(2,8, path)
-    # game.push_card(2,9, path)
-    # print(game.find_gold())
-    # game.show()
+    # game.gold_count()
+    path = Path('urdl')
+
+    game.push_card(3,2, path)
+    game.push_card(2,2, path)
+    game.push_card(2,3, path)
+    game.push_card(2,4, path)
+    game.push_card(2,5, path)
+    game.push_card(2,6, path)
+    game.push_card(3,3, Path('ud'))
+    game.push_card(2,7, path)
+    game.push_card(2,8, path)
+    game.push_card(2,9, path)
+    print(game.find_gold())
+    game.show()
 
     # print(get_x(3), get_y(1))
