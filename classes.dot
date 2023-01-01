@@ -1,0 +1,56 @@
+digraph "classes" {
+charset="utf-8"
+rankdir=BT
+"0" [label="{Action|n : bool\lposition\l|use()\l}", shape="record"];
+"1" [label="{Actor|actor : bool\l|is_bad()\lis_good()\l}", shape="record"];
+"2" [label="{BadTool|gap\l|is_degap()\lis_gap()\lwork_on(target)\l}", shape="record"];
+"3" [label="{Broken_cart|usage : str\l|}", shape="record"];
+"4" [label="{Broken_light|usage : str\l|}", shape="record"];
+"5" [label="{Broken_pickaxe|usage : str\l|}", shape="record"];
+"6" [label="{Card|belong\lorientation : bool\lusage : list\lused : bool\l|change_belong(player)\lis_degap()\lis_gap()\lis_used()\lis_zheng()\lshow()\luse()\l}", shape="record"];
+"7" [label="{Cart|usage : str\l|}", shape="record"];
+"8" [label="{DeGap|degap1 : bool\ldegap2 : bool\ldegap3 : bool\l|choose(number)\lis_single_usage()\lshow()\l}", shape="record"];
+"9" [label="{Ditu|usage : str\l|use()\l}", shape="record"];
+"10" [label="{Double_tool|usage : str\l|}", shape="record"];
+"11" [label="{Empty|usage : str\l|}", shape="record"];
+"12" [label="{End|gold : bool\lis_find : bool\lusage : str\lx : int\ly : int\l|change_position(x, y)\lfound()\lis_gold()\l}", shape="record"];
+"13" [label="{Game|action_cards : list\lactor_list : list\lbad_players : list\lcards : list\lcards_queue : deque\lend\lgold1 : deque\lgold2 : deque\lgold3 : deque\lgolds : deque\lguys_num : int\lmap\lperson_card_num : int\lplayer_pointer : int\lplayers : list\lround\lstarting\l|add_player()\lbad_distribution(index)\ldistribute_card()\ldistribute_gold(index, good)\lfind_end()\lfind_gold()\lgaming()\lget_card_num()\lget_gold()\lget_player(index)\lgold_count()\lgood_distribution(index)\linit_card()\linit_map()\lmake_actor_list()\lmake_gold()\lnot_find_end()\lperson_list_generate(good, bad)\lpop_golds(golds)\lpush_card(x, y, card)\lshow()\lshow_card()\lshow_end_card(x, y)\lshow_map_carded()\lshow_players()\lsplit_golds(golds)\lwelcome()\l}", shape="record"];
+"14" [label="{Gap|gap1 : bool\lgap2 : bool\lgap3 : bool\l|is_trapped()\l}", shape="record"];
+"15" [label="{Gold|value\l|}", shape="record"];
+"16" [label="{GoodTool|decap\l|is_degap()\lis_gap()\lwork_on(target)\l}", shape="record"];
+"17" [label="{Light|usage : str\l|}", shape="record"];
+"18" [label="{Map|chessboard\lfinder : AStarFinder\lgrid\lgrid_map\lh : int\lw : int\l|chess_h()\lchess_w()\lfind_path(x1, y1, x2, y2)\lpush_card(x, y, card)\lshow()\lshow_chessboard()\lshow_grid()\lshow_grid_map()\l}", shape="record"];
+"19" [label="{Path|d : bool\ll : bool\ln : bool\lr : bool\lu : bool\lusage : str\l|change_orientation()\lmake_card(usage)\lupdate_usage()\luse()\l}", shape="record"];
+"20" [label="{Pickaxe|usage : str\l|}", shape="record"];
+"21" [label="{Player|action_cards : list\lactor\lcards : list\lchoice : NoneType\lgap\lgold\lgold_list : list\lname\lstatus : bool\l|add_card(card)\ladd_card_list(cards)\lchoose()\lhas_cards()\lhas_gold()\lis_good()\lis_trapped()\lpush_gold(gold)\lpush_tool_cards(card)\lshow_card()\lupdate_action_cards()\l}", shape="record"];
+"22" [label="{Point|card\lis_card : bool\lstatus\l|is_carded()\lpush_card(card)\l}", shape="record"];
+"23" [label="{Start|usage : str\lx : int\ly : int\l|change_position(x, y)\l}", shape="record"];
+"24" [label="{Status|gap\lpassable : bool\l|update()\lupdate_gap(gap)\l}", shape="record"];
+"25" [label="{Tafang|usage : str\l|use()\l}", shape="record"];
+"0" -> "6" [arrowhead="empty", arrowtail="none"];
+"1" -> "6" [arrowhead="empty", arrowtail="none"];
+"2" -> "0" [arrowhead="empty", arrowtail="none"];
+"3" -> "2" [arrowhead="empty", arrowtail="none"];
+"4" -> "2" [arrowhead="empty", arrowtail="none"];
+"5" -> "2" [arrowhead="empty", arrowtail="none"];
+"7" -> "16" [arrowhead="empty", arrowtail="none"];
+"9" -> "0" [arrowhead="empty", arrowtail="none"];
+"10" -> "16" [arrowhead="empty", arrowtail="none"];
+"11" -> "6" [arrowhead="empty", arrowtail="none"];
+"12" -> "6" [arrowhead="empty", arrowtail="none"];
+"15" -> "6" [arrowhead="empty", arrowtail="none"];
+"16" -> "0" [arrowhead="empty", arrowtail="none"];
+"17" -> "16" [arrowhead="empty", arrowtail="none"];
+"19" -> "6" [arrowhead="empty", arrowtail="none"];
+"20" -> "16" [arrowhead="empty", arrowtail="none"];
+"23" -> "6" [arrowhead="empty", arrowtail="none"];
+"25" -> "0" [arrowhead="empty", arrowtail="none"];
+"6" -> "22" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="card", style="solid"];
+"14" -> "21" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="gap", style="solid"];
+"14" -> "24" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="gap", style="solid"];
+"15" -> "21" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="gold", style="solid"];
+"18" -> "13" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="map", style="solid"];
+"22" -> "0" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="position", style="solid"];
+"23" -> "13" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="starting", style="solid"];
+"24" -> "22" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="status", style="solid"];
+}
