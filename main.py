@@ -369,7 +369,11 @@ class Ditu(Action):
 def choose_position(intro = 'Please choose a position to use this card'):
     print(intro)
     posi = input('Input your position in this type x, y split by comma')
-    posi1, posi2 = posi.strip().split(',')
+    try:
+        posi1, posi2 = posi.strip().split(',')
+    except ValueError:
+        posi1, posi2 = posi.strip().split('，')
+
     posi1 = posi1.strip().split('(')[0]
     posi1 = int(posi1)
     posi2 = posi2.strip().split(')')[0]
@@ -559,13 +563,19 @@ class Map:
 
         flag = True
         for a, b in zip(lis1, lis2):
-            if a:
+            if not a:
                 if not b:
                     flag = False
-        # print(card, lis1, lis2, flag)
+        print(card, lis1, lis2, flag)
         return flag
 
     def push_card(self, x, y, card :Card):
+        """
+        :param x:
+        :param y:
+        :param card:
+        :return: True for valid and False for invalid
+        """
         if self.push_card_valid(x, y, card):
             if not self.grid[x-1][y-1].is_carded():
                 self.grid[x-1][y-1].push_card(card)
@@ -647,9 +657,16 @@ class Path(Card):
         self.update_usage()
 
     def use(self):
+        """
+        path card use
+        :return: bool1 and bool2
+         bool1: whether to repeat the choose card
+         bool2:True for found end adn False for not find end
+        """
         print('Do you need to change the orientation of this card?')
-        bo = int(input('0 for no and 1 for yes'))
+
         try :
+            bo = int(input('0 for no and 1 for yes'))
             bo = bool(bo)
         except:
             bo = bool(int(input('Please re-input whether to change the orientation , 0 for no and 1 for yes')))
@@ -658,12 +675,13 @@ class Path(Card):
         print('You have choose the card as behind')
         x, y = choose_position()
         flag = game.push_card(x, y, self)
-        while not flag:
-            x, y = choose_position('The position you choosed has been used, please re-choose your position to path')
-            game.push_card(x, y, self)
-
-        end = game.find_gold()
-        return end
+        end = False
+        # while not flag:
+        #     x, y = choose_position('The position you choosed has been used, please re-choose your position to path')
+        #     game.push_card(x, y, self)
+        if flag:
+            end = game.find_gold()
+        return flag, end
 class Gold(Card):
     def __init__(self, value):
         super(Gold, self).__init__()
@@ -720,6 +738,10 @@ class Game:
         self.map.show_grid()
 
     def find_gold(self):
+        """
+        turn on all the end and find the gold
+        :return:
+        """
         flag = 0
         for index, card in enumerate(self.end):
             if self.map.find_path(self.starting.y, self.starting.x, card.y, card.x):
@@ -826,27 +848,38 @@ class Game:
             golds = 2
         self.pop_golds(golds)
 
-    def gaming(self):
-        flag = False # to make sure whether the good or the bad
-        for x in self.round:
-            print('This is ' + x)
+
+    def check_player_has_no_cards(self):
+        for index, player in enumerate(self.players):
+            if player.has_cards():
+                return False
+        return True
+
+    def play_round(self):
+        flag = False # whether find the end
+        end = False
+        while (not end) and not  self.check_player_has_no_cards(): # or has no card
             for index, player in enumerate(self.players):
                 card = player.choose()
                 self.player_pointer = index
                 if card is not None:
-                    if card.use():
-                        flag = True
+                    flag, end= card.use()
+                    if flag and end:
                         self.find_end()
                         break
 
                 cls()
                 self.show()
                 # self.map.show_grid_map()
-            if flag :
-                continue
-            else :
-                self.not_find_end()
-            self.show_card()
+        if not end:
+            self.not_find_end()
+        self.show_card()
+
+    def gaming(self):
+        for x in self.round:
+            print('This is ' + x)
+            self.play_round()
+
 
 
 
@@ -1002,26 +1035,26 @@ if __name__=='__main__':
     #
     # card = Start()
     # card = Broken_cart().show()
-    # game.gaming()
+    game.gaming()
     # game.show_map_carded()
     # path = Path('url')
     # print(path)
     # path.change_orientation()
     # print(path)
     # game.gold_count()
-    path = Path('urdl')
-
-    game.push_card(3,2, path)
-    game.push_card(2,2, path)
-    game.push_card(2,3, path)
-    game.push_card(2,4, path)
-    game.push_card(2,5, path)
-    game.push_card(2,6, path)
-    game.push_card(3,3, Path('ud'))
-    game.push_card(2,7, path)
-    game.push_card(2,8, path)
-    game.push_card(2,9, path)
-    print(game.find_gold())
-    game.show()
+    # path = Path('urdl')
+    #
+    # game.push_card(3,2, path)
+    # game.push_card(2,2, path)
+    # game.push_card(2,3, path)
+    # game.push_card(2,4, path)
+    # game.push_card(2,5, path)
+    # game.push_card(2,6, path)
+    # game.push_card(3,3, Path('ud'))
+    # game.push_card(2,7, path)
+    # game.push_card(2,8, path)
+    # game.push_card(2,9, path)
+    # print(game.find_gold())
+    # game.show()
 
     # print(get_x(3), get_y(1))
