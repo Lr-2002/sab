@@ -473,6 +473,12 @@ class Map:
         self.chessboard = [[' ' for x in range(w * 5)] for z in range(h*3)]
         self.grid_map = [[0 for x in range(w * 5)] for z in range(h * 3)]
         self.finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
+
+    def save(self):
+        import numpy as np
+        a = np.array(self.grid_map)
+        np.save('a.npy', a)
+
     def show_chessboard(self):
         print('Here is the map,please')
         z = ['( '+ str(x) + ' )' for x in range(1,10)]
@@ -722,6 +728,7 @@ class Game:
         self.init_card()
         self.distribute_card()
         self.init_map()
+        self.map.save()
         self.show()
         # self.map.show_grid_map()
         # self.gaming()
@@ -1028,8 +1035,7 @@ game = Game()
 if __name__=='__main__':
     # todo: 1. three lines
     # todo: 2. gui
-    # todo: 3. play
-    # todo: 4. gold card
+    # todo: 3. choose card after not able to push
     #
     # game.show()/
     #
