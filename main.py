@@ -729,7 +729,7 @@ class Game:
         self.distribute_card()
         self.init_map()
         self.map.save()
-        self.show()
+        # self.show()
         # self.map.show_grid_map()
         # self.gaming()
     def make_gold(self):
