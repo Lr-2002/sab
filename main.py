@@ -7,6 +7,7 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 __metaclass__ = ABCMeta
+# from game import print_INFO
 def cls():
     os.system('cls')
 
@@ -104,6 +105,9 @@ class Player:
         self.gold_list = []
         self.gap = Gap(False, False, False)
 
+    def get_card(self, index):
+        return self.cards[index]
+
     def push_gold(self, gold):
         self.gold += gold
         self.gold_list.append(gold)
@@ -111,11 +115,27 @@ class Player:
     def has_gold(self):
         return str(self.gold)
 
+    def pop_card(self, card):
+        self.cards.pop(card)
+
     def has_cards(self):
         return  len(self.cards) != 0
 
     def is_good(self):
         return self.actor.is_good()
+
+    def choose_card(self, num):
+        if num < len(self.cards):
+            card = self.cards[num]
+            return card
+
+        elif num == len(self.cards):
+            # self.show_card()
+            card = int(input('Choose the card to be thrown:'))
+            self.cards.pop(card)
+            print('You have these cards left: {}'.format(self.cards))
+        else:
+            return None
 
     def choose(self):
         if self.has_cards():
@@ -123,17 +143,7 @@ class Player:
             self.show_card()
             num = input('Please choose your card to use, other number to pass the choose')
             num = int(num)
-            if num < len(self.cards):
-                card = self.cards[num]
-                return card
-
-            elif num == len(self.cards):
-                # self.show_card()
-                card = int(input('Choose the card to be thrown:'))
-                self.cards.pop(card)
-                print('You have these cards left: {}'.format(self.cards))
-            else:
-                return None
+            return self.choose_card(num)
         else:
             print('You have no cards , turn to the next one ')
             return None
@@ -146,25 +156,31 @@ class Player:
             if isinstance(i, Action):
                 self.action_cards.append(i)
 
+    def get_showed_card(self, index):
+        return self.show_card()[index]
+
     def show_card(self):
-        show = ''
         self.update_action_cards()
         tmp = 0
+        tmp_list = []
         # todo change the show path into three lines
         if not self.is_trapped():
             for index, card in enumerate(self.cards):
                 print(index, card, end=' ,')
                 tmp = index
+                tmp_list.append(card)
             print(tmp+1, 'Throw away a card', end=' ,')
             print(tmp+2, 'Pass')
         else:
             for index, card in enumerate(self.action_cards):
                 print(index, card, end=' ,')
                 tmp = index
+                tmp_list.append(card)
+
             print(tmp + 1, 'Throw away a card', end=' ,')
             print(tmp + 2, 'Pass')
 
-        return show
+        return tmp_list
 
     def add_card_list(self, cards):
         for i in cards:
@@ -173,6 +189,9 @@ class Player:
     def add_card(self, card):
         self.cards.append(card)
         card.belong = self
+    def card_num(self):
+        return len(self.cards)
+
     def __repr__(self):
         return self.name + '(Human)' if self.status else '(AI)'
 
@@ -706,9 +725,10 @@ class Game:
         self.starting = Start()
         self.end = [End(gold=bool(x % 2)) for x in range(3)]
         self.players = [] # Player
+        # self.players_num = 0
         self.player_pointer = 0
         self.actor_list = []
-        self.guys_num = 0
+        self.players_num = 0
         self.cards = []
         self.cards_queue = deque()
         self.person_card_num = 0
@@ -720,18 +740,20 @@ class Game:
         self.gold3 = deque()
         self.round = ['Round {}'.format(x) for x in range(3)]
         # self.welcome()
-
-        for i in range(3):
-            self.players.append(Player('name{}'.format(i), Actor(True)))
+        #
+        # for i in range(3):
+        #     self.players.append(Player('name{}'.format(i), Actor(True)))
         self.get_card_num()
         self.make_gold()
         self.init_card()
-        self.distribute_card()
         self.init_map()
-        self.map.save()
+        # self.map.save()
         # self.show()
         # self.map.show_grid_map()
         # self.gaming()
+    def init(self):
+        self.distribute_card()
+
     def make_gold(self):
         golds = [Gold(1) for x in range(16)]
         golds += [Gold(2) for x in range(8)]
@@ -739,7 +761,8 @@ class Game:
         random.shuffle(golds)
         self.golds = deque(golds)
 
-
+    def get_grid_map(self):
+        return self.map.grid_map
 
     def show_map_carded(self):
         self.map.show_grid()
@@ -761,6 +784,9 @@ class Game:
 
     def get_player(self, index):
         return self.players[index]
+
+    def get_now_player(self):
+        return self.get_player(self.player_pointer)
 
     def show_card(self):
         for a, b in enumerate(self.players):
@@ -969,6 +995,10 @@ class Game:
     def show(self):
         self.map.show()
 
+    def next_player(self):
+        self.players_num = len(self.players)
+        self.player_pointer = (self.player_pointer + 1) % self.players_num
+
     def add_player(self):
         cnt = len(self.players)
         inp = input('Please enter the name of player {} and its status(AI: 0,Human:1):'.format(cnt))
@@ -985,12 +1015,27 @@ class Game:
         self.bad_players.append(player)
 
 
+    def add_player_gui(self, inp):
+        cnt = len(self.players)
+        # inp = input('Please enter the name of player {} and its status(AI: 0,Human:1):'.format(cnt))
+        name, status = inp.split(',')
+        name = name.strip()
+        status = int(status.strip())
+        info = 'your actor is {}'.format('good' if self.actor_list[cnt].is_good() else 'bad')
+        player = Player(name, self.actor_list[cnt], status)
+        self.players.append(player)
+        self.bad_players.append(player)
+        return info
+
+    def get_player_num(self):
+        return len(self.players)
+
     def welcome(self):
         print('+-----------------------------------------------------------------+')
         print('|Welcome to Sabootters,where dwarf otters look for gold in a mine!|')
         print('+-----------------------------------------------------------------+')
         num = int(input('How many players?'))
-        self.guys_num = num
+        self.players_num = num
         self.make_actor_list()
         for x in range(num):
             self.add_player()
@@ -1008,7 +1053,7 @@ class Game:
         process the person_list and generate a list which stands for who is good airen
         :return: a list
         """
-        num = self.guys_num
+        num = self.players_num
         good = 0
         bad = 0
         if num == 3:

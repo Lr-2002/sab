@@ -3,7 +3,10 @@ import numpy as np
 from enum import Enum
 import sys
 import pygame_textinput
-from main import game
+
+import game
+from main import *
+import copy
 
 SIZE = (700, 500)
 WIDTH = SIZE[0]
@@ -12,6 +15,12 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+PINK = (255, 51, 204)
+BLUE = (0, 0, 255)
+LIGHT_BLUE = (0, 204, 255)
+
+COLOR_LIST = [WHITE, RED, YELLOW, PINK, BLUE, GREEN, LIGHT_BLUE]
 
 BLOCKSIZE = 20
 BLOCKWIDTH = 28
@@ -30,17 +39,33 @@ CARD_LUY = GAMEHEIGHT + 40
 
 CHOICE_LUX = GAMEWIDTH + 3
 CHOICE_LUY = GAMEHEIGHT + 3
+CHOICE_NUM = 0
 # def
 
 CARD_CHOOSING = 0
 
 text_input = pygame_textinput.TextInputVisualizer()
-text_input.value = 'tesing'
+text_input.value = 'inp'
 text_input.font_color = WHITE
 text_input.cursor_visible = True
 pygame.font.init()
 font = pygame.font.SysFont('microsoft Yahei', 16)
 
+
+class Status(Enum):
+    start = 1
+    game = 2
+    add_player = 3
+
+class Game_Status(Enum):
+    init = 0
+    choose_card = 1
+    choose_position = 2
+    throw = 3
+    pass_turn = 4
+    re_choose_card = 5
+    choose_player = 6
+    choose_end = 7
 
 class PRINT_MODE(Enum):
     INFO = 1
@@ -67,22 +92,39 @@ def card_check(a):
         return True
 
 def get_card(card='( E )(END)( D )'):
-    end_list = []
-    return_list = []
-    for i in card:
-        tmp = card_check(i)
-        if tmp is not None:
-            end_list.append(tmp)
-    tt = []
+    if '|' in card or '-' in card or '+' in card:
+        end_list = []
+        return_list = []
+        for i in card:
+            tmp = card_check(i)
+            if tmp is not None:
+                end_list.append(tmp)
+        tt = []
 
-    for index, tmp in enumerate(end_list):
-        tt.append(tmp)
-        if index % 3 == 2:
-            return_list.append(tt)
-            tt = []
-    return return_list
+        for index, tmp in enumerate(end_list):
+            tt.append(tmp)
+            if index % 3 == 2:
+                return_list.append(tt)
+                tt = []
+        tt_lis = copy.deepcopy(return_list)
+        for x, tmp in enumerate(return_list):
+            for y, point in enumerate(tmp):
+                tt_lis[y][x] = return_list[x][y]
+        return tt_lis
+    elif 'MAP' in card:
+        return [[2] *3 for x in range(3)]
+    elif 'ATT' in card:
+        return [[3] *3 for x in range(3)]
+    elif 'DEF' in card:
+        return [[4] *3 for x in range(3)]
+    elif 'L' or 'P' or 'C' in card:
+        return [[5] *3 for x in range(3)]
+    elif 'T' in card and 'F' in card:
+        return [[0] *3 for x in range(3)]
 
-def draw_grid(screen, grid):
+
+
+def draw_grid_content(screen, grid):
     for x, heng in enumerate(grid):
         for y, point in enumerate(heng):
             if point:
@@ -99,6 +141,7 @@ def draw_card(screen, index, card):
     :param card:
     :return:
     """
+    # print(card)
     color_list = get_card(card)
     x = index * (BLOCKSIZE * 3 + 10) + CARD_LUX
     y = CARD_LUY
@@ -107,10 +150,7 @@ def draw_card(screen, index, card):
     print_message(screen, card_center_x, card_center_y, str(index), WHITE, mode=PRINT_MODE.CENTER)
     for xx, lis in enumerate(color_list):
         for yy, color in enumerate(lis):
-            if color:
-                color = RED
-            else:
-                color = WHITE
+            color = COLOR_LIST[color]
 
             # print(color)
 
@@ -127,6 +167,11 @@ def print_message(screen, x, y, message, color, mode:PRINT_MODE):
             global INFO_NUM
             y += INFO_NUM * text_rect.h
             INFO_NUM += 1
+        elif mode == PRINT_MODE.CHOICE:
+            global CHOICE_NUM
+            y += CHOICE_NUM * text_rect.h
+            CHOICE_NUM += 1
+
 
         text_rect.center = (x + w + 3, y + h)
         screen.blit(text, text_rect)
@@ -135,17 +180,17 @@ def print_message(screen, x, y, message, color, mode:PRINT_MODE):
         screen.blit(text, text_rect)
 
 
-def print_INFO(screen, message, color):
+def print_INFO(screen, message, color=WHITE):
     x = INFO_LUX + 10
     y = INFO_LUY
     print_message(screen, x, y, message, color, PRINT_MODE.INFO)
 
-def print_WARNING(screen, message, color):
+def print_WARNING(screen, message, color=WHITE):
     x = WARNING_LUX
     y = WARNING_LUY
     print_message(screen, x, y, message, color, PRINT_MODE.WARNING)
 
-def print_CHOICE(screen, message, color):
+def print_CHOICE(screen, message, color=WHITE):
     x = CHOICE_LUX
     y = CHOICE_LUY
     print_message(screen, x, y, message, color, PRINT_MODE.CHOICE)
@@ -167,9 +212,14 @@ def print_CHOICE(screen, message, color):
 def show_player(screen):
     print_INFO(screen, '-+-Players-+-', WHITE)
     for index, player in enumerate(game.players):
-        print_INFO(screen, str(player), WHITE)
+        if player.has_cards():
+            print_INFO(screen, str(player) + ' {}'.format(len(player.cards)), WHITE)
+        else:
+            print_INFO(screen, str(player), WHITE)
+
 
 def get_27_15(a:np.array):
+    a = np.array(a)
     tmp = []
     for i in range(9):
         x = i * 5 + 2
@@ -179,67 +229,221 @@ def get_27_15(a:np.array):
     a = a[tmp]
     return a
 
+def read_input(events: pygame.event):
+    # print(events)
+    for event in events:
+        # print(event['key'])
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                value = text_input.value
+                text_input.value =''
+                return value
+def show_player_card(screen):
+    person = game.get_now_player()
+    print_WARNING(screen, '{}, You have these cards,  {} to throw and {} to pass'.format(person, person.card_num() , person.card_num() + 1), WHITE)
+    cards = person.show_card()
+    for index, card in enumerate(cards):
+        draw_card(screen, index, str(card))
+
+def draw_base_grid(screen):
+    for x in range(BLOCKWIDTH):
+        pygame.draw.line(screen, WHITE, (x * BLOCKSIZE, 0), (x * BLOCKSIZE, GAMEHEIGHT), 1)
+    for y in range(BLOCKHEIGHT):
+        pygame.draw.line(screen, WHITE, (0, y * BLOCKSIZE), (GAMEWIDTH, y * BLOCKSIZE), 1)
+    # pygame.display.flip()
+    pygame.draw.line(screen, GREEN, (GAMEWIDTH, 0), (GAMEWIDTH, HEIGHT), 3)
+    pygame.draw.line(screen, GREEN, (0, GAMEHEIGHT), (WIDTH, GAMEHEIGHT), 3)
+
+def draw_text(screen):
+    screen.blit(text_input.surface, (CHOICE_LUX, CHOICE_LUY + 50))
+
+def end_show(clock):
+    pygame.display.update()
+    clock.tick(10)
+
+def handle_event():
+    events = pygame.event.get()
+    for event in events:
+        if event.type == pygame.QUIT:
+            exit()
+    return events
+
+def circle_init(screen, grid):
+    global INFO_NUM
+    INFO_NUM = 0
+    global CHOICE_NUM
+    CHOICE_NUM = 0
+    draw_grid_content(screen, grid)
+    draw_base_grid(screen)
+    draw_text(screen)
+
+def get_position(posi):
+    try:
+        posi1, posi2 = posi.strip().split(',')
+    except ValueError:
+        posi1, posi2 = posi.strip().split('，')
+
+    posi1 = posi1.strip().split('(')[0]
+    posi1 = int(posi1)
+    posi2 = posi2.strip().split(')')[0]
+    posi2 = int(posi2)
+    return posi1, posi2
+
 def gaming():
     a = np.load('./a.npy')
     a = get_27_15(a)
     pygame.init()
-
-
-
     screen = pygame.display.set_mode(SIZE)
     pygame.display.set_caption('Sab')
     RIGHT = False
-
     done = False
     clock = pygame.time.Clock()
-    # screen.blit(text_input.surface, (CHOICE_LUX, CHOICE_LUY + 50))
+    print_INFO(screen, 'Welcome to the game!', WHITE)
+    status = Status.start
+    status = Status.game
+    game_status = Game_Status.init
+    # game.distribute_card()
 
+    card_num = 0
+
+    round = 0
+
+    print(get_card('MAP'))
     while not done:
         screen.fill(BLACK)
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                exit()
+        events = handle_event()
         text_input.update(events)
-        print(text_input.value)
+        circle_init(screen, get_27_15(game.get_grid_map()))
+        #
+        # print_CHOICE(screen, 'your choose is as below', WHITE)
+        #
+        # show_player(screen)
+        #
+        # show_player_card(screen)
 
+        # todo: 1. welcome
+        if status == Status.start:
+            print_INFO(screen, 'Welcome')
+            print_INFO(screen, 'Please enter ')
+            print_INFO(screen, 'players number')
+            print_CHOICE(screen, 'Enter num here')
 
+            inp = read_input(events)
+            if inp is not None:
+                inp = int(inp)
+                game.players_num = inp
+                status = Status.add_player
+                if game.players_num == 0:
+                    game.make_actor_list()
+                else:
+                    game.distribute_card()
+                    status = Status.game
+        elif status == Status.add_player:
+            show_player(screen)
+            if game.get_player_num() < game.players_num:
+                print_CHOICE(screen, 'name, 0 or 1')
+                inp = read_input(events)
+                if inp is not None:
+                    print(game.add_player_gui(inp))
+            else:
+                game.distribute_card()
+                status = Status.game
+        # draw_card(screen, 6, '( | )( + )( | )')
+        if status == Status.game:
+            print_INFO(screen, 'This is Round {}'.format(round))
+            show_player(screen)
+            player = game.get_now_player()
+            if game_status == Game_Status.init:
+                show_player_card(screen)
+                print_CHOICE(screen, 'Input your card num')
+                inp = read_input(events)
+                if inp is not None:
+                    inp = int(inp)
+                    if inp < game.get_now_player().card_num():
+                        card_num = inp
+                        if isinstance(game.get_now_player().get_card(card_num), Path):
+                            game_status = Game_Status.choose_position
+                        elif isinstance(game.get_now_player().get_card(card_num), Tafang):
+                            game_status = Game_Status.choose_position
+                        elif isinstance(game.get_now_player().get_card(card_num), Map):
+                            game_status = Game_Status.choose_end
+                    elif inp == game.get_player().card_num():
+                        game_status = Game_Status.throw
+                        # throw_card()
+                    else:
+                        game_status = Game_Status.pass_turn
+                        # pass_turn()
 
-        # game
+            elif game_status == Game_Status.throw:
+                print_WARNING(screen, 'choose your card to be thrown')
+                print_CHOICE(screen, 'input card num ')
+                inp = text_input(screen)
+                if inp is not None:
+                    inp = int(inp)
+                    card = game.get_now_player().get_showed_card(inp)
+                    game.get_now_player().pop_card(card)
+                    game.next_player()
+                    game_status = Game_Status.init
+            elif game_status == Game_Status.pass_turn:
+                game.next_player()
+                game_status = Game_Status.init
+            elif game_status == Game_Status.choose_position or game_status == Game_Status.re_choose_card:
+                if game_status == Game_Status.re_choose_card :
+                    print_CHOICE(screen, 'Rechoose your card')
+                print_WARNING(screen, 'You have choose this card')
+                draw_card(screen, card_num, str(player.get_card(card_num)))
+                print_CHOICE(screen, 'Input your position, x,y')
+                inp = read_input(events)
+                if inp is not None:
+                    # todo the drawed card is different from the base card
+                    x, y = get_position(inp)
+                    if game.push_card(x, y, player.get_card(card_num)):
+                        player.pop_card(card_num)
+                        game.next_player()
+                        if game.find_gold():
+                            round += 1
+                            status = Status.start
+                            game.find_end()
+                        game_status = Game_Status.init
+                    else:
+                        game_status = Game_Status.re_choose_card
+            elif game_status == Game_Status.choose_player:
+                draw_card(screen, card_num, str(player.get_card(card_num)))
+                print_CHOICE(screen, 'Choose your target')
+                print_WARNING(screen, 'Please choose your target to use your card')
+                inp = read_input(events)
+                if inp is not None:
+                    # todo double use card
+                    inp = int(inp)
+                    game.get_player(inp).push_tool_cards(game.get_now_player().get_showed_card(card_num))
+                    game.get_now_player().pop_card(card_num)
+                    game.next_player()
+                    game_status = Game_Status.init
+            elif game_status == Game_Status.choose_end:
+                print_WARNING(screen, 'Please choose a position to use this Tafang card')
+                print_CHOICE(screen, 'choose one:0,1,2')
+                inp = read_input(events)
+                if inp is not None:
+                    # todo double use card
+                    inp = int(inp)
+                    posi = 0
+                    if inp == 0 :
+                        posi = 1
+                    elif inp == 1:
+                        posi = 3
+                    elif inp == 2:
+                        posi = 5
+                    card = Empty()
+                    game.push_card(posi, 9, card)
+                    game.get_now_player().pop_card(card_num)
+                    game.next_player()
+                    game_status = Game_Status.init
+        # todo: 2. choose card
+        # todo: 3. choose position
+        # todo: 4. choose player
+        # todo: 5. end of the game
 
-        # draw
-        global INFO_NUM
-        INFO_NUM = 0
-
-        draw_grid(screen, a)
-
-        print_WARNING(screen, 'Jesus ', WHITE)
-        print_CHOICE(screen, 'choice', WHITE)
-
-        draw_card(screen, 0, '( | )(-+-)(   )')
-        draw_card(screen, 1, '( | )( +-)(   )')
-        draw_card(screen, 2, '( | )(-+ )(   )')
-        draw_card(screen, 3, '( | )(-+-)( | )')
-
-        # INFO
-        show_player(screen)
-
-
-        for x in range(BLOCKWIDTH):
-            pygame.draw.line(screen, WHITE, (x * BLOCKSIZE, 0), (x * BLOCKSIZE, GAMEHEIGHT), 1)
-        for y in range(BLOCKHEIGHT):
-            pygame.draw.line(screen, WHITE, (0, y * BLOCKSIZE), (GAMEWIDTH, y * BLOCKSIZE), 1 )
-        # pygame.display.flip()
-        pygame.draw.line(screen, GREEN, (GAMEWIDTH, 0), (GAMEWIDTH, HEIGHT), 3)
-        pygame.draw.line(screen, GREEN, (0, GAMEHEIGHT), (WIDTH, GAMEHEIGHT  ), 3)
-
-
-
-        screen.blit(text_input.surface, (CHOICE_LUX, CHOICE_LUY + 50))
-
-        pygame.display.update()
-
-        clock.tick(10)
+        end_show(clock)
 
     pygame.quit()
 if __name__ == '__main__':
