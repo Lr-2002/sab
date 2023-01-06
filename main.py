@@ -357,8 +357,10 @@ class Player:
         what status he is
         :return:
         """
-        return self.name + '(Human)' if self.status else '(AI)'
-
+        return self.name
+    def trapped(self):
+        st = '{}{}{}'.format('L' if self.gap.gap1 else ' ', 'C' if self.gap.gap2 else ' ', 'P' if self.gap.gap3 else ' ')
+        return st
     def push_tool_cards(self, card):
         """
         push the gap or degap
@@ -988,14 +990,11 @@ class Game:
         self.gold2 = deque()
         self.gold3 = deque()
         self.round = ['Round {}'.format(x) for x in range(3)]
-        # self.welcome()
-        #
-        for i in range(3):
-            self.players.append(Player('name{}'.format(i), Actor(True)))
-        self.get_card_num()
-        self.make_gold()
-        self.init_card()
-        self.init_map()
+
+
+        # for i in range(3):
+        #     self.players.append(Player('name{}'.format(i), Actor(True)))
+
         # self.map.save()
         # self.show()
         # self.map.show_grid_map()
@@ -1008,6 +1007,10 @@ class Game:
             player.add_card(card)
 
     def init(self):
+        self.get_card_num()
+        self.make_gold()
+        self.init_card()
+        self.init_map()
         self.distribute_card()
 
     def make_gold(self):
@@ -1143,6 +1146,11 @@ class Game:
             if player.has_cards():
                 return False
         return True
+    def get_winner(self):
+        players = sorted(self.players, key=lambda player: int(player.has_gold()))
+        # for player in players:
+        #     print(player.has_gold())
+        return players[-1]
 
     def play_round(self):
         flag = False  # whether find the end
@@ -1327,5 +1335,8 @@ game = Game()
 
 
 if __name__ == '__main__':
-    game.gaming()
+    # game.gaming()
 
+    game.welcome()
+    game.init()
+    game.gaming()

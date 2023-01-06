@@ -68,6 +68,8 @@ class Game_Status(Enum):
     re_choose_card = 5
     choose_player = 6
     choose_end = 7
+    find_end = 8
+    over = 9
 
 
 class Tool_Status(Enum):
@@ -198,7 +200,7 @@ def print_message(screen, x, y, message, color, mode: PRINT_MODE):
 
 
 def print_INFO(screen, message, color=WHITE):
-    x = INFO_LUX + 10
+    x = INFO_LUX+2
     y = INFO_LUY
     print_message(screen, x, y, message, color, PRINT_MODE.INFO)
 
@@ -233,7 +235,7 @@ def show_player(screen):
     print_INFO(screen, '-+-Players-+-', WHITE)
     for index, player in enumerate(game.players):
         if player.has_cards():
-            print_INFO(screen, str(player) + ' {}'.format(len(player.cards)), WHITE)
+            print_INFO(screen, str(player) + ' {} {} '.format(player.trapped() ,player.has_gold()), WHITE)
         else:
             print_INFO(screen, str(player), WHITE)
 
@@ -267,6 +269,8 @@ def show_player_card(screen):
     cards = person.show_card()
     for index, card in enumerate(cards):
         draw_card(screen, index, str(card))
+        if isinstance(card, BadTool) or isinstance(card, GoodTool):
+            print_INFO(screen, '{} card is {}'.format(index, str(card)[5:10]), RED)
 
 
 def draw_base_grid(screen):
@@ -321,7 +325,7 @@ def get_position(posi):
 
 
 def gaming():
-    mode = 'deve'
+    mode = 'release'
 
     # a = np.load('./a.npy')
     # a = get_27_15(a)
@@ -346,56 +350,55 @@ def gaming():
     round = 0
     tool_status = Tool_Status.one_tool
 
-    print(get_card('MAP'))
-
     show_end_card_timing = 0
     show_end_card_bool = False
     show_end_card_card = None
     while not done:
+        print(status)
         time = 10
         screen.fill(BLACK)
         events = handle_event()
         text_input.update(events)
         circle_init(screen, get_27_15(game.get_grid_map()))
-        #
-        # print_CHOICE(screen, 'your choose is as below', WHITE)
-        #
+
+
         # show_player(screen)
-        #
-        # show_player_card(screen)
 
-        # todo: 1. welcome
-        # if status == Status.start:
-        #     print_INFO(screen, 'Welcome')
-        #     print_INFO(screen, 'Please enter ')
-        #     print_INFO(screen, 'players number')
-        #     print_CHOICE(screen, 'Enter num here')
-        #
-        #     inp = read_input(events)
-        #     if inp is not None:
-        #         inp = int(inp)
-        #         game.players_num = inp
-        #         status = Status.add_player
-        #         if game.get_player_num() == 0:
-        #             game.make_actor_list()
-        #         else:
-        #             game.distribute_card()
-        #             status = Status.game
-        # elif status == Status.add_player:
-        #     show_player(screen)
-        #     if game.get_player_num() < game.players_num:
-        #         print_CHOICE(screen, 'name, 0 or 1')
-        #         inp = read_input(events)
-        #         if inp is not None:
-        #             print(game.add_player_gui(inp))
-        #     else:
-        #         game.distribute_card()
-        #         status = Status.game
-        # draw_card(screen, 6, '( | )( + )( | )')
+        if status == Status.start:
+            print_INFO(screen, 'Welcome')
+            print_INFO(screen, 'Please enter ')
+            print_INFO(screen, 'players number')
+            print_CHOICE(screen, 'Enter num here')
 
-        if status == Status.game:
+            inp = read_input(events)
+            if inp is not None:
+                inp = int(inp)
+                game.players_num = inp
+                status = Status.add_player
+                if game.get_player_num() == 0:
+                    game.make_actor_list()
+                    game.init()
+                    game.distribute_card()
+                    status = Status.add_player
+                else:
+                    game.distribute_card()
+                    status = Status.add_player
+        elif status == Status.add_player:
+            show_player(screen)
+            if game.get_player_num() < game.players_num:
+                print_CHOICE(screen, 'name, 0 or 1')
+                inp = read_input(events)
+                if inp is not None:
+                    print(game.add_player_gui(inp))
+            else:
+                game.distribute_card()
+                status = Status.game
+        elif status == Status.game:
+            print_CHOICE(screen, 'your choose is as below', WHITE)
+
             print_INFO(screen, 'This is Round {}'.format(round))
             show_player(screen)
+            # show_player_card(screen)
             player = game.get_now_player()
             if game_status == Game_Status.init:
                 show_player_card(screen)
@@ -442,7 +445,6 @@ def gaming():
                 print_CHOICE(screen, 'Input your position, x,y')
                 inp = read_input(events)
                 if inp is not None:
-                    # todo the drawed card is different from the base card
                     x, y = get_position(inp)
                     if game.push_card(x, y, player.get_card(card_num)):
                         player.pop_card(card_num)
@@ -451,15 +453,18 @@ def gaming():
                             round += 1
                             status = Status.start
                             game.find_end()
+                            game_status = Game_Status.find_end
+                            end_show(time)
+                            continue
                         game_status = Game_Status.init
                     else:
                         game_status = Game_Status.re_choose_card
             elif game_status == Game_Status.choose_player:
-                card = player.get_card(card_num)
+                card = player.get_showed_card(card_num)
                 if isinstance(card, Double_tool):
                     tool_status = Tool_Status.double_tool
                 if tool_status == Tool_Status.one_tool:
-                    card = game.get_now_player().get_card(card_num)
+                    card = game.get_now_player().get_showed_card(card_num)
                     if double_card_card is not None:
                         card = double_card_card
                         # draw_card(screen, 0, str(card))
@@ -478,8 +483,6 @@ def gaming():
                         game_status = Game_Status.init
                         double_card_card = None
                 else:
-                    # todo double use card
-                    # how to change the card into one use card
                     print_WARNING(screen, 'You have these choose:{}'.format(str(game.get_now_player().get_showed_card(card_num))))
                     print_CHOICE(screen, 'L,C,P in your choice')
                     inp = read_input(events)
@@ -512,15 +515,8 @@ def gaming():
                         card = game.show_end_card(posi, 9)
                         show_end_card_bool = True
                         show_end_card_card = card
-                        # card = Empty()
-                        # game.push_card(posi, 9, card)
-                        # draw_card(screen, 6, card)
-                        # todo show end use extern variable
                         game.get_now_player().pop_card(card_num)
                         game.next_player()
-                        # pygame.display.update()
-                        # clock.tick(time)
-                        # game_status = Game_Status.init
                 else:
                     print_INFO(screen, ' this is the card you choose')
                     draw_card(screen, 0, show_end_card_card)
@@ -530,6 +526,21 @@ def gaming():
                         show_end_card_card = None
                         show_end_card_timing = 0
                         game_status = Game_Status.init
+            elif game_status == Game_Status.find_end:
+                show_player(screen)
+                print_INFO('round {} is over'.format(round), RED)
+                if round == 2:
+                    game_status = Game_Status.over
+                    continue
+                show_end_card_timing += 1
+                if show_end_card_timing == 10:
+                    show_end_card_timing = 0
+                    game_status = Game_Status.init
+            elif game_status == Game_Status.over:
+                print_INFO(screen, 'Game is over', RED)
+                show_player(screen)
+                print_INFO(screen, '{} is the winner'.format(game.get_winner()))
+
         # todo: 2. choose card
         # todo: 3. choose position
         # todo: 4. choose player
