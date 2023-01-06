@@ -219,10 +219,12 @@ class Player:
         """
         pop the card use index
         :param card:  index
-        :return:
+        :return: None
         """
         idnex = self.get_original_position(card)
         self.cards.pop(card)
+        game.distribut_one_card()
+
 
     def has_cards(self):
         """
@@ -999,6 +1001,12 @@ class Game:
         # self.map.show_grid_map()
         # self.gaming()
 
+    def distribut_one_card(self):
+        if len(self.cards_queue) != 0:
+            player = self.get_now_player()
+            card = self.cards_queue.popleft()
+            player.add_card(card)
+
     def init(self):
         self.distribute_card()
 
@@ -1166,8 +1174,8 @@ class Game:
         for player in self.players:
             for i in range(self.person_card_num):
                 card = self.cards_queue.popleft()
-                if i == 3:
-                    card = Double_tool(True, False, True)
+                # if i == 3:
+                #     card = Double_tool(True, False, True)
                 player.add_card(card)
 
         for player in self.players:

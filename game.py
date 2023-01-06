@@ -129,12 +129,12 @@ def get_card(card='( E )(END)( D )'):
     elif 'DEF' in card:
         return [[4] * 3 for x in range(3)]
     elif 'TON' in card:
-        return [[6] * 3 for x in range(3)]
+        return [[7] * 3 for x in range(3)]
     elif 'T' in card and 'F' in card and 'A' in card:
         return [[0] * 3 for x in range(3)]
-    elif 'G' in card and 'L' in card:
+    elif 'G' in card and 'L' in card and 'D' in card:
 
-        return [[7] * 3 for x in range(3)]
+        return [[8] * 3 for x in range(3)]
 
     elif 'L' or 'P' or 'C' in card:
         return [[5] * 3 for x in range(3)]
