@@ -8,10 +8,21 @@ from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 __metaclass__ = ABCMeta
 # from game import print_INFO
+
+
 def cls():
+    """
+    clean the console
+    you must run this in terminal
+    :return:
+    """
     os.system('cls')
 
+
 class DeGap:
+    """
+    base function for calculating
+    """
     def __init__(self, degap1=False, degap2=False, degap3=False):
         """
         if degap is True, it will cancel the gap
@@ -24,25 +35,52 @@ class DeGap:
         self.degap3 = degap3
 
     def is_single_usage(self):
+        """
+        make sure whether there is only one use
+        :return:
+        """
         return not(self.degap1 if self.degap1 == self.degap2 else self.degap3)
 
     def __repr__(self):
-        return str(self.degap1)+str(self.degap2) + str(self.degap3)
+        """
+        :return:
+        """
+        return str(self.degap1) + str(self.degap2) + str(self.degap3)
 
     def choose(self, number):
+        """
+        choose the use
+        especially for double tool
+        :param number:
+        :return:
+        """
         if number == 1:
             return DeGap(True)
         elif number == 2:
             return DeGap(degap2=True)
-        elif number == 3 :
+        elif number == 3:
             return DeGap(degap3=True)
 
     def show(self):
-        # show_card()
+        """
+        show the card info
+        :return:
+        """
         print(self)
+
+
 def str2list(str):
+    """
+    :param str:the str
+    :return: list(str)
+    """
     return list(str)
+
+
 class Gap:
+    """
+    conflict with degap
+    """
     def __init__(self, gap1=False, gap2=False, gap3=False):
         """
         if gap is true ,it will stop someone from talking
@@ -56,16 +94,33 @@ class Gap:
         self.gap3 = gap3
 
     def is_trapped(self):
+        """
+        whether is this point trapped
+        :return:
+        """
         return self.gap1 or self.gap2 or self.gap3
 
     def __add__(self, other):
+        """
+        add two gap
+        :param other:
+        :return:
+        """
         self.gap1 += other.gap1
         self.gap2 += other.gap2
         self.gap3 += other.gap3
         return Gap(self.gap1, self.gap2, self.gap3)
 
     def __sub__(self, other: DeGap):
+        """
+        gap - degap
+        :param other:
+        :return:
+        """
         if other.is_single_usage():
+            if not self.is_trapped():
+                return Gap(False, False, False)
+            # print(bool(self.gap1 - other.degap1), bool(self.gap2 - other.degap2), bool(self.gap3 - other.degap3))
             return Gap(bool(self.gap1 - other.degap1), bool(self.gap2 - other.degap2), bool(self.gap3 - other.degap3))
         else:
             print('This card has two function, please choose one function to use')
@@ -73,58 +128,122 @@ class Gap:
             choosed = int(input('input card\'s number to choose'))
             choice = other.choose(choosed)
             # print(choice)
-            return self-choice
+            return self - choice
 
     def __repr__(self):
-        return str(self.gap1) +  str(self.gap2) +  str(self.gap3)
+        return str(self.gap1) + str(self.gap2) + str(self.gap3)
+
 
 class Status:
+    """
+    the player status
+    """
     def __init__(self):
         self.passable = True
         self.gap = Gap()
 
     def update(self):
+        """
+        is trapped?
+        :return:
+        """
         self.passable = not self.gap.get_gap()
 
     def update_gap(self, gap):
+        """
+        the gap he has
+        :param gap:
+        :return:
+        """
         self.gap += gap
         self.update()
 
 
-
 class Player:
+
     def __init__(self, name, actor, statue=True):
+        """
+
+        :param name: player name
+        :param actor: the actor card, whether he is good or bad
+        :param statue: ai or human
+        """
         cards = []
         self.name = name
         self.actor = actor
         self.cards = cards
         self.action_cards = []
-        self.status = statue # False for AI , True for human
-        self.choice = None # card
+        self.status = statue  # False for AI , True for human
+        self.choice = None  # card
         self.gold = Gold(0)
         self.gold_list = []
         self.gap = Gap(False, False, False)
 
     def get_card(self, index):
+        """
+        return the card
+        :param index:
+        :return:
+        """
         return self.cards[index]
 
     def push_gold(self, gold):
+        """
+        every round get the gold
+        :param gold:
+        :return:
+        """
         self.gold += gold
         self.gold_list.append(gold)
 
     def has_gold(self):
+        """
+        how many gold he has
+        :return:
+        """
         return str(self.gold)
 
+    def get_original_position(self, card):
+        """
+        use in gui
+        to get the original card
+        :param card:
+        :return:
+        """
+        card = self.get_showed_card(card)
+        for index, cards in enumerate(self.cards):
+            if cards == card:
+                return index
+
     def pop_card(self, card):
+        """
+        pop the card use index
+        :param card:  index
+        :return:
+        """
+        idnex = self.get_original_position(card)
         self.cards.pop(card)
 
     def has_cards(self):
-        return  len(self.cards) != 0
+        """
+        whether has cards
+        :return:
+        """
+        return len(self.cards) != 0
 
     def is_good(self):
+        """
+        whether he is good
+        :return:
+        """
         return self.actor.is_good()
 
     def choose_card(self, num):
+        """
+        get a card use index
+        :param num:
+        :return:
+        """
         if num < len(self.cards):
             card = self.cards[num]
             return card
@@ -138,6 +257,10 @@ class Player:
             return None
 
     def choose(self):
+        """
+        self.choose
+        :return: the card choosed
+        """
         if self.has_cards():
             print('{}, You have these cards to select: '.format(self.name))
             self.show_card()
@@ -149,17 +272,36 @@ class Player:
             return None
 
     def is_trapped(self):
+        """
+        self.gap.is_trapped()
+        :return:
+        """
         return self.gap.is_trapped()
 
     def update_action_cards(self):
+        """
+        just get the action cards
+        :return:
+        """
+        self.action_cards = []
         for i in self.cards:
             if isinstance(i, Action):
                 self.action_cards.append(i)
 
     def get_showed_card(self, index):
+        """
+        how many cards showed
+        especially someone is trapped
+        :param index:
+        :return:
+        """
         return self.show_card()[index]
 
     def show_card(self):
+        """
+        show the card
+        :return:
+        """
         self.update_action_cards()
         tmp = 0
         tmp_list = []
@@ -169,8 +311,8 @@ class Player:
                 print(index, card, end=' ,')
                 tmp = index
                 tmp_list.append(card)
-            print(tmp+1, 'Throw away a card', end=' ,')
-            print(tmp+2, 'Pass')
+            print(tmp + 1, 'Throw away a card', end=' ,')
+            print(tmp + 2, 'Pass')
         else:
             for index, card in enumerate(self.action_cards):
                 print(index, card, end=' ,')
@@ -183,61 +325,121 @@ class Player:
         return tmp_list
 
     def add_card_list(self, cards):
+        """
+        use list to push cards
+        :param cards:
+        :return:
+        """
         for i in cards:
             self.add_card(i)
 
     def add_card(self, card):
+        """
+        append card
+        :param card:
+        :return:
+        """
         self.cards.append(card)
         card.belong = self
+
     def card_num(self):
-        return len(self.cards)
+        """
+        get the total_num of cards
+        :return:
+        """
+        show_len = self.show_card()
+        return len(show_len)
 
     def __repr__(self):
+        """
+        what status he is
+        :return:
+        """
         return self.name + '(Human)' if self.status else '(AI)'
 
     def push_tool_cards(self, card):
+        """
+        push the gap or degap
+        :param card:
+        :return:
+        """
         if isinstance(card, BadTool):
-            self.gap +  card.gap
+            self.gap += card.gap
         elif isinstance(card, GoodTool):
             self.gap -= card.decap
 
+
 class Card:
+    """
+    base class of all cards
+    """
     def __init__(self):
-        self.orientation = True # true for zheng; false for fan
+
+        self.orientation = True  # true for zheng; false for fan
         self.used = False
         self.usage = []
 
     def change_belong(self, player: Player):
+        """
+        change the player this card belongs to
+        :param player:
+        :return:
+        """
         self.belong = player
 
     def __setitem__(self, key, value):
+        """
+        change the value use the key
+        :param key:
+        :param value:
+        :return:
+        """
         if key < len(self.usage):
             self.usage[key] = value
 
-    def __getitem__(self, item):
-        if item < len(self.usage):
-            return self.usage[item]
-
-    def is_used(self):
-        return self.used
-
-    def is_zheng(self):
-        return self.orientation
+    def __getitem__(self, index):
+        """
+        use index to get every bit
+        :param index:
+        :return:
+        """
+        if index < len(self.usage):
+            return self.usage[index]
 
     def is_gap(self):
+        """
+        same as isinstance(card, Gap)
+        :return:
+        """
         return False
 
     def is_degap(self):
+        """
+        the other side of the is_gap
+        :return:
+        """
         return False
 
     def __repr__(self):
+        """
+        use the (   )(   )(   ) to present different the card
+        :return:
+        """
         return self.usage if self.usage is not None else '(   )(   )(   )'
 
     @abstractmethod
     def use(self):
+        """
+        to be implementd by different cards
+        :return:
+        """
         pass
 
     def show(self):
+        """
+        show the card
+        :return:
+        """
         cnt = 1
         for i in self.usage:
             if cnt == 5:
@@ -247,14 +449,6 @@ class Card:
                 print(i, end='')
                 cnt += 1
 
-
-
-
-
-def show_card(card:Card):
-    # todo use three lines to show
-    pass
-
 def get_x(x):
     return 3 * x - 2
 
@@ -262,6 +456,9 @@ def get_y(y):
     return 5 * y - 3
 
 class End(Card):
+    """
+    end card
+    """
     def __init__(self, gold=False):
         super(End, self).__init__()
         self.usage = '( E )(END)( D )'
@@ -275,6 +472,10 @@ class End(Card):
         self.y = y
 
     def found(self):
+        """
+        return the answer ,whether you find the gold
+        :return:
+        """
         self.is_find = True
         if self.gold:
             self.usage = '( G )( L )( D )'
@@ -284,23 +485,34 @@ class End(Card):
             return False
 
     def is_gold(self):
+        """
+        whether this is a gold
+        :return:
+        """
         return self.gold
 
     def __repr__(self):
         return '(   )(GLD)(   )' if self.gold else '( S )(TON)( E )'
 
+
 class Empty(Card):
+    """
+    empty card
+    """
     def __init__(self):
         super(Empty, self).__init__()
-        self.usage='(   )(   )(   )'
+        self.usage = '(   )(   )(   )'
+
 
 class Point:
+    """
+    use for map
+    """
     def __init__(self, status=Status, is_card=False):
 
         self.is_card = is_card
         self.card = Card()
         self.status = status
-
 
     def is_carded(self):
         return self.is_card
@@ -309,26 +521,44 @@ class Point:
         return 'X' if self.is_card else ' '
 
     def push_card(self, card: Card):
+        """
+        push a card into this point
+        :param card:
+        :return:
+        """
         self.card = card
         self.is_card = True
+        if isinstance(card, Empty):
+            self.is_card = False
         if self.card.is_gap():
             self.status.update_gap(card.gap)
         elif self.card.is_degap():
             pass
             # self.status.update_gap(card.)
 
+
 class Start(Card):
+    """
+    start card
+    the start point
+    """
     def __init__(self):
         super(Start, self).__init__()
-        self.usage='( | )(-S-)( | )'
+        self.usage = '( | )(-S-)( | )'
         self.x = 0
         self.y = 0
         # print(self.usage)
+
     def change_position(self, x, y):
+
         self.x = x
         self.y = y
 
+
 class Action(Card):
+    """
+    action card
+    """
     def __init__(self, n=True):
         super(Action, self).__init__()
         self.n = n
@@ -341,13 +571,15 @@ class Action(Card):
         person = game.get_player(person)
         person.push_tool_cards(self)
 
+
 class GoodTool(Action):
-    def __init__(self, degap:DeGap, n=True):
+    def __init__(self, degap: DeGap, n=True):
         super(GoodTool, self).__init__(n)
         self.decap = degap
 
-    def work_on(self, target:Player):
+    def work_on(self, target: Player):
         target.gap += self.decap
+
     def is_degap(self):
         return True
 
@@ -356,11 +588,11 @@ class GoodTool(Action):
 
 
 class BadTool(Action):
-    def __init__(self, gap:Gap):
+    def __init__(self, gap: Gap):
         super(BadTool, self).__init__()
         self.gap = gap
 
-    def work_on(self, target:Player):
+    def work_on(self, target: Player):
         target.gap = self.gap
 
     def is_gap(self):
@@ -369,9 +601,8 @@ class BadTool(Action):
     def is_degap(self):
         return False
 
-    def __sub__(self, other:GoodTool):
+    def __sub__(self, other: GoodTool):
         self.gap = self.gap - other.decap
-
 
 
 class Ditu(Action):
@@ -382,10 +613,12 @@ class Ditu(Action):
     #     pass
 
     def use(self):
-        x, y =choose_position('There is three card in the map (1, 9), (3, 9), (5, 9), please choose your position to view')
+        x, y = choose_position('There is three card in the map (1, 9), (3, 9), (5, 9), please choose your position to view')
         game.show_end_card(x, y)
         input('enter to pass')
-def choose_position(intro = 'Please choose a position to use this card'):
+
+
+def choose_position(intro='Please choose a position to use this card'):
     print(intro)
     posi = input('Input your position in this type x, y split by comma')
     try:
@@ -399,6 +632,7 @@ def choose_position(intro = 'Please choose a position to use this card'):
     posi2 = int(posi2)
     return (posi1, posi2)
 
+
 class Tafang(Action):
     def __init__(self):
         super(Tafang, self).__init__()
@@ -409,10 +643,12 @@ class Tafang(Action):
         empty = Empty()
         game.push_card(x, y, empty)
 
+
 class Broken_light(BadTool):
     def __init__(self):
         super(Broken_light, self).__init__(gap=Gap(True, False, False))
         self.usage = '(ATT)( L )(   )'
+
 
 class Broken_cart(BadTool):
     def __init__(self):
@@ -456,19 +692,24 @@ def show_list(head, lis):
 
         print(i, end='')
     print()
+
+
 def show_list_without(head, lis):
     print(head, end=' ')
     for i in lis:
 
         print(i, end=' ')
     print()
+
+
 class Actor(Card):
     def __init__(self, actor=True):
         """
         :param actor: True for good and False for bad
         """
         super(Actor, self).__init__()
-        self.actor = actor # true stand for the good and False for the bad
+        self.actor = actor  # true stand for the good and False for the bad
+
     def is_good(self):
         return self.actor
 
@@ -484,12 +725,13 @@ class Actor(Card):
         else:
             return False
 
+
 class Map:
     def __init__(self, h=5, w=9):
         self.h = h
         self.w = w
         self.grid = [[Point() for x in range(w)] for y in range(h)]
-        self.chessboard = [[' ' for x in range(w * 5)] for z in range(h*3)]
+        self.chessboard = [[' ' for x in range(w * 5)] for z in range(h * 3)]
         self.grid_map = [[0 for x in range(w * 5)] for z in range(h * 3)]
         self.finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
 
@@ -500,12 +742,12 @@ class Map:
 
     def show_chessboard(self):
         print('Here is the map,please')
-        z = ['( '+ str(x) + ' )' for x in range(1,10)]
-        show_list('     ',z)
+        z = ['( ' + str(x) + ' )' for x in range(1, 10)]
+        show_list('     ', z)
         print()
         flag = 1
         for x in self.grid:
-            show_list( '( '+ str(flag) + ' )', x)
+            show_list('( ' + str(flag) + ' )', x)
             flag += 1
             print()
 
@@ -538,19 +780,18 @@ class Map:
         num = 1
         cnt = 1
         print('Current mine state:')
-        z = ['( '+ str(x) + ' )' for x in range(1,10)]
-        show_list('     ',z)
-        print('-----+'+ '-'*(self.w * 5 ))
+        z = ['( ' + str(x) + ' )' for x in range(1, 10)]
+        show_list('     ', z)
+        print('-----+' + '-' * (self.w * 5))
         for i in self.chessboard:
-            if num % 3  == 2 :
+            if num % 3 == 2:
                 show_list('( ' + str(flag) + ' )', i)
                 flag += 1
             else:
                 show_list('(   )', i)
 
-
-            num +=1
-            cnt +=1
+            num += 1
+            cnt += 1
         # print(cnt)?
 
     def get_gird_map(self, x, y):
@@ -567,10 +808,10 @@ class Map:
         :return: True means has no point
         """
         # self.show_grid_map()
-        u = not self.get_gird_map(x-2, y)
-        d = not self.get_gird_map(x+2, y)
-        l = not self.get_gird_map(x, y-3)
-        r = not self.get_gird_map(x, y+3)
+        u = not self.get_gird_map(x - 2, y)
+        d = not self.get_gird_map(x + 2, y)
+        l = not self.get_gird_map(x, y - 3)
+        r = not self.get_gird_map(x, y + 3)
         return u, d, l, r
 
     def push_card_valid(self, x, y, card):
@@ -583,6 +824,8 @@ class Map:
         """
         if not isinstance(card, Path):
             return True
+        if isinstance(card, Tafang):
+            return True
         lis1 = list(self.check_valid(x * 3 - 2, y * 5 - 3))
         lis2 = [card.u, card.d, card.l, card.r]
 
@@ -594,7 +837,7 @@ class Map:
         print(card, lis1, lis2, flag)
         return flag
 
-    def push_card(self, x, y, card :Card):
+    def push_card(self, x, y, card: Card):
         """
         :param x:
         :param y:
@@ -602,13 +845,15 @@ class Map:
         :return: True for valid and False for invalid
         """
         if self.push_card_valid(x, y, card):
-            if not self.grid[x-1][y-1].is_carded():
-                self.grid[x-1][y-1].push_card(card)
+            if isinstance(card, Tafang) or (not self.grid[x - 1][y - 1].is_carded()):
+                if isinstance(card, Tafang):
+                    card = Empty()
+                self.grid[x - 1][y - 1].push_card(card)
                 tx = x * 3 - 2
                 ty = y * 5 - 3
                 cnt = 0
-                for xx in range(tx-1, tx+2):
-                    for yy in range(ty-2, ty+3):
+                for xx in range(tx - 1, tx + 2):
+                    for yy in range(ty - 2, ty + 3):
                         self.chessboard[xx][yy] = card[cnt]
                         if cnt not in [0, 4, 10, 14]:
                             if card[cnt] != ' ':
@@ -629,19 +874,18 @@ class Map:
         num = 1
         cnt = 1
         print('Current mine state:')
-        z = ['( '+ str(x) + ' )' for x in range(1,10)]
-        show_list('     ',z)
-        print('-----+'+ '-'*(self.w * 5 ))
+        z = ['( ' + str(x) + ' )' for x in range(1, 10)]
+        show_list('     ', z)
+        print('-----+' + '-' * (self.w * 5))
         for i in self.grid_map:
-            if num % 3  == 2 :
+            if num % 3 == 2:
                 show_list('( ' + str(flag) + ' )', i)
                 flag += 1
             else:
                 show_list('(   )', i)
 
-
-            num +=1
-            cnt +=1
+            num += 1
+            cnt += 1
 
 
 class Path(Card):
@@ -656,9 +900,10 @@ class Path(Card):
         self.update_usage()
         # self.usage = '( {} )({}+{})( {} )'.format('|' if u else ' ', '-' if l else ' ', '-' if r else ' ', '|' if d else ' ')
     # def get_usage(self)/:
-    def make_card(self, usage:str):
+
+    def make_card(self, usage: str):
         usage = usage.upper()
-        f =  lambda us: True if us.upper() in usage else False
+        def f(us): return True if us.upper() in usage else False
         self.l = f('l')
         self.u = f('u')
         self.r = f('r')
@@ -667,7 +912,6 @@ class Path(Card):
 
     def update_usage(self):
         self.usage = '( {} )({}+{})( {} )'.format('|' if self.u else ' ', '-' if self.l else ' ', '-' if self.r else ' ', '|' if self.d else ' ')
-
 
     def change_orientation(self):
         u = self.u
@@ -690,12 +934,12 @@ class Path(Card):
         """
         print('Do you need to change the orientation of this card?')
 
-        try :
+        try:
             bo = int(input('0 for no and 1 for yes'))
             bo = bool(bo)
-        except:
+        except BaseException:
             bo = bool(int(input('Please re-input whether to change the orientation , 0 for no and 1 for yes')))
-        if bo :
+        if bo:
             self.change_orientation()
         print('You have choose the card as behind')
         x, y = choose_position()
@@ -707,6 +951,8 @@ class Path(Card):
         if flag:
             end = game.find_gold()
         return flag, end
+
+
 class Gold(Card):
     def __init__(self, value):
         super(Gold, self).__init__()
@@ -719,12 +965,13 @@ class Gold(Card):
         self.value += other.value
         return self
 
+
 class Game:
     def __init__(self):
         self.map = Map()
         self.starting = Start()
         self.end = [End(gold=bool(x % 2)) for x in range(3)]
-        self.players = [] # Player
+        self.players = []  # Player
         # self.players_num = 0
         self.player_pointer = 0
         self.actor_list = []
@@ -741,8 +988,8 @@ class Game:
         self.round = ['Round {}'.format(x) for x in range(3)]
         # self.welcome()
         #
-        # for i in range(3):
-        #     self.players.append(Player('name{}'.format(i), Actor(True)))
+        for i in range(3):
+            self.players.append(Player('name{}'.format(i), Actor(True)))
         self.get_card_num()
         self.make_gold()
         self.init_card()
@@ -751,6 +998,7 @@ class Game:
         # self.show()
         # self.map.show_grid_map()
         # self.gaming()
+
     def init(self):
         self.distribute_card()
 
@@ -780,9 +1028,11 @@ class Game:
         return flag
 
     def show_end_card(self, x, y):
-        print(self.end[int(x/2)])
+        print(self.end[int(x / 2)])
+        return self.end[int(x / 2)]
 
     def get_player(self, index):
+        # index = index % self.pla？yers_num
         return self.players[index]
 
     def get_now_player(self):
@@ -799,7 +1049,7 @@ class Game:
             cards.append(self.golds.popleft())
         return cards
 
-    def distribute_gold(self, index, good:bool):
+    def distribute_gold(self, index, good: bool):
         index = index + len(self.players)
         player_size = len(self.players)
 
@@ -814,7 +1064,6 @@ class Game:
                 player.push_gold(golds.popleft())
             index -= 1
         print('Distribute golds finished')
-
 
     def good_distribution(self, index):
         self.distribute_gold(index, True)
@@ -881,7 +1130,6 @@ class Game:
             golds = 2
         self.pop_golds(golds)
 
-
     def check_player_has_no_cards(self):
         for index, player in enumerate(self.players):
             if player.has_cards():
@@ -889,14 +1137,14 @@ class Game:
         return True
 
     def play_round(self):
-        flag = False # whether find the end
+        flag = False  # whether find the end
         end = False
-        while (not end) and not  self.check_player_has_no_cards(): # or has no card
+        while (not end) and not self.check_player_has_no_cards():  # or has no card
             for index, player in enumerate(self.players):
                 card = player.choose()
                 self.player_pointer = index
                 if card is not None:
-                    flag, end= card.use()
+                    flag, end = card.use()
                     if flag and end:
                         self.find_end()
                         break
@@ -913,18 +1161,14 @@ class Game:
             print('This is ' + x)
             self.play_round()
 
-
-
-
     def distribute_card(self):
 
         for player in self.players:
-            # print(player)
             for i in range(self.person_card_num):
                 card = self.cards_queue.popleft()
-                # print(player,i, card)
+                if i == 3:
+                    card = Double_tool(True, False, True)
                 player.add_card(card)
-            # print(player.cards)
 
         for player in self.players:
             print(player, player.cards, len(player.cards))
@@ -935,9 +1179,9 @@ class Game:
         num = len(self.players)
         if num <= 5:
             self.person_card_num = 6
-        elif num <=7:
+        elif num <= 7:
             self.person_card_num = 5
-        elif num <=10:
+        elif num <= 10:
             self.person_card_num = 4
 
     def show_players(self):
@@ -946,6 +1190,7 @@ class Game:
         for index, player in enumerate(self.players):
             print(index, end=' ')
             print(player, end=' ,')
+
     def init_card(self):
         # path
         self.cards = [Path('urdl') for x in range(5)] + [Path('urdl', n=False)]
@@ -958,11 +1203,10 @@ class Game:
         self.cards += [Path('u', n=False)]
         self.cards += [Path('r', n=False)]
 
-
         # tools
-        self.action_cards += [Light() for x in range(2)] # L
+        self.action_cards += [Light() for x in range(2)]  # L
         self.action_cards += [Pickaxe() for x in range(2)]  # P
-        self.action_cards += [Cart() for x in range(2)] # W
+        self.action_cards += [Cart() for x in range(2)]  # W
         self.action_cards += [Broken_light() for x in range(3)]
         self.action_cards += [Broken_pickaxe() for x in range(3)]
         self.action_cards += [Broken_cart() for x in range(3)]
@@ -985,12 +1229,10 @@ class Game:
     def init_map(self):
         self.push_card(3, 1, self.starting)
         self.starting.change_position(get_x(3), get_y(1))
-        for a,b in zip([1,3,5], self.end):
+        for a, b in zip([1, 3, 5], self.end):
             self.push_card(a, 9, b)
             b.change_position(get_x(a), get_y(9))
         # self.push_card(3, 2, Path())
-
-
 
     def show(self):
         self.map.show()
@@ -1014,10 +1256,8 @@ class Game:
         self.players.append(player)
         self.bad_players.append(player)
 
-
     def add_player_gui(self, inp):
         cnt = len(self.players)
-        # inp = input('Please enter the name of player {} and its status(AI: 0,Human:1):'.format(cnt))
         name, status = inp.split(',')
         name = name.strip()
         status = int(status.strip())
@@ -1046,7 +1286,7 @@ class Game:
     def person_list_generate(self, good, bad):
         person_list = [Actor(True) for x in range(good)]
         person_list += [Actor(False) for y in range(bad)]
-        return  person_list
+        return person_list
 
     def make_actor_list(self):
         """
@@ -1058,15 +1298,15 @@ class Game:
         bad = 0
         if num == 3:
             good = 3
-        elif num==4 or num == 5:
-            good =4
+        elif num == 4 or num == 5:
+            good = 4
         elif num == 6 or num == 7:
             good = 5
-        elif num == 8 :
+        elif num == 8:
             good = 6
         elif num == 9:
             good = 7
-        elif num == 10 :
+        elif num == 10:
             good = 7
         bad = num + 1 - good
         person_list = self.person_list_generate(good, bad)
@@ -1074,38 +1314,10 @@ class Game:
         self.actor_list = person_list[:-1]
         print(self.actor_list)
 
+
 game = Game()
 
 
-if __name__=='__main__':
-    # todo: 1. three lines
-    # todo: 2. gui
-    # todo: 3. choose card after not able to push
-    #
-    # game.show()/
-    #
-    # card = Start()
-    # card = Broken_cart().show()
+if __name__ == '__main__':
     game.gaming()
-    # game.show_map_carded()
-    # path = Path('url')
-    # print(path)
-    # path.change_orientation()
-    # print(path)
-    # game.gold_count()
-    # path = Path('urdl')
-    #
-    # game.push_card(3,2, path)
-    # game.push_card(2,2, path)
-    # game.push_card(2,3, path)
-    # game.push_card(2,4, path)
-    # game.push_card(2,5, path)
-    # game.push_card(2,6, path)
-    # game.push_card(3,3, Path('ud'))
-    # game.push_card(2,7, path)
-    # game.push_card(2,8, path)
-    # game.push_card(2,9, path)
-    # print(game.find_gold())
-    # game.show()
 
-    # print(get_x(3), get_y(1))
